@@ -40,7 +40,7 @@ logger = logging.get_logger(__name__)
 class OnnxRuntimeModel:
     base_model_prefix = "onnx_model"
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model: ort.InferenceSession = None, **kwargs):
         logger.info("`diffusers.OnnxRuntimeModel` is experimental and might change in the future.")
         self.model = model
         self.model_save_dir = kwargs.get("model_save_dir", None)
@@ -51,7 +51,7 @@ class OnnxRuntimeModel:
         return self.model.run(None, inputs)
 
     @staticmethod
-    def load_model(path: Union[str, Path], provider=None, session_options: Optional[ort.SessionOptions]=None):
+    def load_model(path: Union[str, Path], provider=None, session_options: Optional[ort.SessionOptions]=None) -> ort.InferenceSession:
         """
         Loads an ONNX Inference session with an ExecutionProvider. Default provider is `CPUExecutionProvider`
 
@@ -110,6 +110,10 @@ class OnnxRuntimeModel:
 
         # saving model weights/files
         self._save_pretrained(save_directory, **kwargs)
+
+    def end_profiling(self):
+        if self.model.get_session_options().enable_profiling:
+            self.model.end_profiling()
 
     @classmethod
     def _from_pretrained(
