@@ -51,7 +51,7 @@ class OnnxRuntimeModel:
         return self.model.run(None, inputs)
 
     @staticmethod
-    def load_model(path: Union[str, Path], provider=None):
+    def load_model(path: Union[str, Path], provider=None, session_options: Optional[ort.SessionOptions]=None):
         """
         Loads an ONNX Inference session with an ExecutionProvider. Default provider is `CPUExecutionProvider`
 
@@ -60,12 +60,14 @@ class OnnxRuntimeModel:
                 Directory from which to load
             provider(`str`, *optional*):
                 Onnxruntime execution provider to use for loading the model, defaults to `CPUExecutionProvider`
+            session_options(ort.SessionOptions, *optional*):
+                The session options to use while creating the inference session.
         """
         if provider is None:
             logger.info("No onnxruntime provider specified, using CPUExecutionProvider")
             provider = "CPUExecutionProvider"
 
-        return ort.InferenceSession(path, providers=[provider])
+        return ort.InferenceSession(path, providers=[provider], sess_options=session_options)
 
     def _save_pretrained(self, save_directory: Union[str, Path], file_name: Optional[str] = None, **kwargs):
         """
@@ -119,6 +121,7 @@ class OnnxRuntimeModel:
         cache_dir: Optional[str] = None,
         file_name: Optional[str] = None,
         provider: Optional[str] = None,
+        session_options: Optional[ort.SessionOptions] = None,
         **kwargs,
     ):
         """
@@ -142,6 +145,8 @@ class OnnxRuntimeModel:
                 different model files from the same repository or directory.
             provider(`str`):
                 The ONNX runtime provider, e.g. `CPUExecutionProvider` or `CUDAExecutionProvider`.
+            session_options(`Optional[onnxruntime.SessionOptions]`):
+                The session_options to be passed while creating the onnxruntime.InferenceSession
             kwargs (`Dict`, *optional*):
                 kwargs will be passed to the model during initialization
         """
@@ -163,7 +168,7 @@ class OnnxRuntimeModel:
             )
             kwargs["model_save_dir"] = Path(model_cache_path).parent
             kwargs["latest_model_name"] = Path(model_cache_path).name
-            model = OnnxRuntimeModel.load_model(model_cache_path, provider=provider)
+            model = OnnxRuntimeModel.load_model(model_cache_path, provider=provider, session_options=session_options)
         return cls(model=model, **kwargs)
 
     @classmethod
@@ -173,6 +178,7 @@ class OnnxRuntimeModel:
         force_download: bool = True,
         use_auth_token: Optional[str] = None,
         cache_dir: Optional[str] = None,
+        session_options: Optional[ort.SessionOptions] = None,
         **model_kwargs,
     ):
         revision = None
@@ -185,5 +191,6 @@ class OnnxRuntimeModel:
             cache_dir=cache_dir,
             force_download=force_download,
             use_auth_token=use_auth_token,
+            session_options=session_options,
             **model_kwargs,
         )

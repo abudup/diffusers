@@ -18,7 +18,8 @@ import importlib
 import inspect
 import os
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
+from onnxruntime import SessionOptions
 
 import numpy as np
 import torch
@@ -227,6 +228,10 @@ class DiffusionPipeline(ConfigMixin):
                 The specific model version to use. It can be a branch name, a tag name, or a commit id, since we use a
                 git-based system for storing models and other artifacts on huggingface.co, so `revision` can be any
                 identifier allowed by git.
+            session_options(`Optional[Union[onnxruntime.SessionOptions, Dict[str, onnxruntime.SessionOptions]]]`):
+                The session options to be passed while creating inference sessions. Can be a single session_option to be 
+                used for all sessions, or can be a dictionary mapping class names to session options. Currently used
+                only for OnnxRuntimeModel.
             mirror (`str`, *optional*):
                 Mirror source to accelerate downloads in China. If you are from China and have an accessibility
                 problem, you can set this option to resolve it. Note that we do not guarantee the timeliness or safety.
@@ -281,6 +286,7 @@ class DiffusionPipeline(ConfigMixin):
         revision = kwargs.pop("revision", None)
         torch_dtype = kwargs.pop("torch_dtype", None)
         provider = kwargs.pop("provider", None)
+        session_options = kwargs.pop("session_options", None)
 
         # 1. Download the checkpoints and configs
         # use snapshot download here to get it working from from_pretrained
@@ -377,6 +383,17 @@ class DiffusionPipeline(ConfigMixin):
                     loading_kwargs["torch_dtype"] = torch_dtype
                 if issubclass(class_obj, diffusers.OnnxRuntimeModel):
                     loading_kwargs["provider"] = provider
+                    if session_options is not None:
+                        if isinstance(session_options, dict):
+                            session_opts_to_pass = session_options.get(class_name, None)
+                        elif isinstance(session_options, SessionOptions):
+                            session_opts_to_pass = session_options
+                        else:
+                            session_opts_to_pass = None
+                    else:
+                        session_opts_to_pass = None
+                    if session_opts_to_pass is not None:
+                        loading_kwargs["session_options"] = session_opts_to_pass
 
                 # check if the module is in a subdirectory
                 if os.path.isdir(os.path.join(cached_folder, name)):
