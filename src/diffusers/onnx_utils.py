@@ -113,7 +113,9 @@ class OnnxRuntimeModel:
 
     def end_profiling(self):
         if self.model.get_session_options().enable_profiling:
-            self.model.end_profiling()
+            return self.model.end_profiling()
+        else:
+            return None
 
     @classmethod
     def _from_pretrained(
@@ -157,7 +159,7 @@ class OnnxRuntimeModel:
         model_file_name = file_name if file_name is not None else ONNX_WEIGHTS_NAME
         # load model from local directory
         if os.path.isdir(model_id):
-            model = OnnxRuntimeModel.load_model(os.path.join(model_id, model_file_name), provider=provider)
+            model = OnnxRuntimeModel.load_model(os.path.join(model_id, model_file_name), provider=provider, session_options=session_options)
             kwargs["model_save_dir"] = Path(model_id)
         # load model from hub
         else:

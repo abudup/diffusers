@@ -165,7 +165,7 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
     def end_profiling(self):
-        self.vae_decoder.end_profiling()
-        self.text_encoder.end_profiling()
-        self.unet.end_profiling()
-        self.safety_checker.end_profiling()
+        return [self.vae_decoder.end_profiling(),
+                self.text_encoder.end_profiling(),
+                self.unet.end_profiling(),
+                self.safety_checker.end_profiling()]
