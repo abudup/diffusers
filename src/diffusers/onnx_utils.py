@@ -117,6 +117,12 @@ class OnnxRuntimeModel:
         else:
             return None
 
+    def get_profiling_start_time_ns(self):
+        if self.model.get_session_options().enable_profiling:
+            return self.model.get_profiling_start_time_ns()
+        else:
+            return None
+
     @classmethod
     def _from_pretrained(
         cls,

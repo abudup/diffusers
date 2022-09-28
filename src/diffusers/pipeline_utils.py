@@ -385,7 +385,7 @@ class DiffusionPipeline(ConfigMixin):
                     loading_kwargs["provider"] = provider
                     if session_options is not None:
                         if isinstance(session_options, dict):
-                            session_opts_to_pass = session_options.get(class_name, None)
+                            session_opts_to_pass = session_options.get(name, None)
                         elif isinstance(session_options, SessionOptions):
                             session_opts_to_pass = session_options
                         else:
@@ -393,6 +393,9 @@ class DiffusionPipeline(ConfigMixin):
                     else:
                         session_opts_to_pass = None
                     if session_opts_to_pass is not None:
+                        if session_opts_to_pass.enable_profiling and session_opts_to_pass.profile_file_prefix is None:
+                            # make sure that profile file prefix is unique per model
+                            session_opts_to_pass.profile_file_prefix = f'onnxruntime_{name}_profile'
                         loading_kwargs["session_options"] = session_opts_to_pass
 
                 # check if the module is in a subdirectory

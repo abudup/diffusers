@@ -1,4 +1,5 @@
 import inspect
+import json
 from typing import List, Optional, Union
 
 import numpy as np
@@ -165,7 +166,37 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
     def end_profiling(self):
+        # vae_decoder_profiling_start_time_ns = self.vae_decoder.get_profiling_start_time_ns()
+        # text_encoder_profiling_start_time_ns = self.text_encoder.get_profiling_start_time_ns()
+        # unet_profiling_start_time_ns = self.unet.get_profiling_start_time_ns()
+        # safety_checker_profiling_start_time_ns = self.safety_checker.get_profiling_start_time_ns()
+
+        # min_start_time_ns = min(vae_decoder_profiling_start_time_ns, 
+        #                         text_encoder_profiling_start_time_ns,
+        #                         unet_profiling_start_time_ns,
+        #                         safety_checker_profiling_start_time_ns)
+
+        # vae_decoder_profile_file = self.vae_decoder.end_profiling()
+        # text_encoder_profile_file = self.text_encoder.end_profiling()
+        # unet_profile_file = self.unet.end_profiling()
+        # safety_checker_profile_file = self.safety_checker.end_profiling()
+
+        # # unify the profile outputs now
+        # with open(vae_decoder_profile_file) as f:
+        #     vae_decoder_events = json.load(f)
+        # with open(text_encoder_profile_file) as f:
+        #     text_encoder_events = json.load(f)
+        # with open(unet_profile_file) as f:
+        #     unet_events = json.load(f)
+        # with open(safety_checker_profile_file) as f:
+        #     safety_checker_events = json.load(f)
+
+        # event_lists = [vae_decoder_events, text_encoder_events, unet_events, safety_checker_events]
+        # merged_event_list = []
+
         return [self.vae_decoder.end_profiling(),
                 self.text_encoder.end_profiling(),
                 self.unet.end_profiling(),
                 self.safety_checker.end_profiling()]
+
+        
