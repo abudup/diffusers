@@ -1,3 +1,4 @@
+import datetime
 import inspect
 import json
 from typing import List, Optional, Union
@@ -166,37 +167,54 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
     def end_profiling(self):
-        # vae_decoder_profiling_start_time_ns = self.vae_decoder.get_profiling_start_time_ns()
-        # text_encoder_profiling_start_time_ns = self.text_encoder.get_profiling_start_time_ns()
-        # unet_profiling_start_time_ns = self.unet.get_profiling_start_time_ns()
-        # safety_checker_profiling_start_time_ns = self.safety_checker.get_profiling_start_time_ns()
+        vae_decoder_profiling_start_ts = self.vae_decoder.get_profiling_start_time_ns() / 1000
+        text_encoder_profiling_start_ts = self.text_encoder.get_profiling_start_time_ns() / 1000
+        unet_profiling_start_ts = self.unet.get_profiling_start_time_ns() / 1000
+        safety_checker_profiling_start_ts = self.safety_checker.get_profiling_start_time_ns() / 1000
 
-        # min_start_time_ns = min(vae_decoder_profiling_start_time_ns, 
-        #                         text_encoder_profiling_start_time_ns,
-        #                         unet_profiling_start_time_ns,
-        #                         safety_checker_profiling_start_time_ns)
+        min_start_time_ns = min(vae_decoder_profiling_start_ts, 
+                                text_encoder_profiling_start_ts,
+                                unet_profiling_start_ts,
+                                safety_checker_profiling_start_ts)
 
-        # vae_decoder_profile_file = self.vae_decoder.end_profiling()
-        # text_encoder_profile_file = self.text_encoder.end_profiling()
-        # unet_profile_file = self.unet.end_profiling()
-        # safety_checker_profile_file = self.safety_checker.end_profiling()
+        vae_decoder_profile_file = self.vae_decoder.end_profiling()
+        text_encoder_profile_file = self.text_encoder.end_profiling()
+        unet_profile_file = self.unet.end_profiling()
+        safety_checker_profile_file = self.safety_checker.end_profiling()
 
-        # # unify the profile outputs now
-        # with open(vae_decoder_profile_file) as f:
-        #     vae_decoder_events = json.load(f)
-        # with open(text_encoder_profile_file) as f:
-        #     text_encoder_events = json.load(f)
-        # with open(unet_profile_file) as f:
-        #     unet_events = json.load(f)
-        # with open(safety_checker_profile_file) as f:
-        #     safety_checker_events = json.load(f)
+        def load_and_sort_events(file_name, time_offset):
+            with open(file_name) as f:
+                events = sorted(json.load(f), key=lambda d: d['ts'])
+            for event in events:
+                event['ts'] -= time_offset
+            return events
+            
+        vae_decoder_events = load_and_sort_events(vae_decoder_profile_file)
+        text_encoder_events = load_and_sort_events(text_encoder_profile_file)
+        unet_events = load_and_sort_events(unet_profile_file)
+        safety_checker_events = load_and_sort_events(safety_checker_profile_file)
 
-        # event_lists = [vae_decoder_events, text_encoder_events, unet_events, safety_checker_events]
-        # merged_event_list = []
+        event_lists = [vae_decoder_events, text_encoder_events, unet_events, safety_checker_events]
+        merged_event_list = []
 
-        return [self.vae_decoder.end_profiling(),
-                self.text_encoder.end_profiling(),
-                self.unet.end_profiling(),
-                self.safety_checker.end_profiling()]
+        def pop_next_event(event_lists: List[List[dict]]):
+            min_value = None
+            min_index = -1
 
-        
+            for idx, event_list in enumerate(event_lists):
+                if len(event_list) == 0:
+                    continue
+                if min_value is None or min_value > event_list[0]['ts']:
+                    min_value = event_list[0]['ts']
+                    min_index = idx
+            return event_lists[min_index].pop()
+
+        while any(len(l) > 0 for l in event_lists):
+            merged_event_list.append(pop_next_event(event_lists))
+
+        merged_event_list = [json.dumps(x) for x in merged_event_list]
+
+        # write out the merged event list
+        suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S.%f")
+        with open(f'sd_onnx_profile_{suffix}.json', 'w') as f:
+            json.dump(merged_event_list, f)
