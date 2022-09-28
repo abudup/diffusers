@@ -392,10 +392,6 @@ class DiffusionPipeline(ConfigMixin):
                             session_opts_to_pass = None
                     else:
                         session_opts_to_pass = None
-                    if session_opts_to_pass is not None:
-                        if session_opts_to_pass.enable_profiling and session_opts_to_pass.profile_file_prefix == 'onnxruntime_profile_':
-                            # make sure that profile file prefix is unique per model
-                            session_opts_to_pass.profile_file_prefix = f'onnxruntime_{name}_profile'
                         loading_kwargs["session_options"] = session_opts_to_pass
 
                 # check if the module is in a subdirectory

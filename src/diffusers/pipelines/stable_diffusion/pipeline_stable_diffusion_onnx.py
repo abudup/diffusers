@@ -172,7 +172,7 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         unet_profiling_start_ts = self.unet.get_profiling_start_time_ns() / 1000
         safety_checker_profiling_start_ts = self.safety_checker.get_profiling_start_time_ns() / 1000
 
-        min_start_time_ns = min(vae_decoder_profiling_start_ts, 
+        min_start_ts = min(vae_decoder_profiling_start_ts, 
                                 text_encoder_profiling_start_ts,
                                 unet_profiling_start_ts,
                                 safety_checker_profiling_start_ts)
@@ -189,10 +189,10 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
                 event['ts'] -= time_offset
             return events
             
-        vae_decoder_events = load_and_sort_events(vae_decoder_profile_file)
-        text_encoder_events = load_and_sort_events(text_encoder_profile_file)
-        unet_events = load_and_sort_events(unet_profile_file)
-        safety_checker_events = load_and_sort_events(safety_checker_profile_file)
+        vae_decoder_events = load_and_sort_events(vae_decoder_profile_file, vae_decoder_profiling_start_ts - min_start_ts)
+        text_encoder_events = load_and_sort_events(text_encoder_profile_file, text_encoder_profiling_start_ts - min_start_ts)
+        unet_events = load_and_sort_events(unet_profile_file, unet_profiling_start_ts - min_start_ts)
+        safety_checker_events = load_and_sort_events(safety_checker_profile_file, safety_checker_profiling_start_ts - min_start_ts)
 
         event_lists = [vae_decoder_events, text_encoder_events, unet_events, safety_checker_events]
         merged_event_list = []
