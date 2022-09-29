@@ -167,10 +167,10 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
     def end_profiling(self):
-        vae_decoder_profiling_start_ts = self.vae_decoder.get_profiling_start_time_ns() / 1000
-        text_encoder_profiling_start_ts = self.text_encoder.get_profiling_start_time_ns() / 1000
-        unet_profiling_start_ts = self.unet.get_profiling_start_time_ns() / 1000
-        safety_checker_profiling_start_ts = self.safety_checker.get_profiling_start_time_ns() / 1000
+        vae_decoder_profiling_start_ts = self.vae_decoder.get_profiling_start_time_ns() // 1000
+        text_encoder_profiling_start_ts = self.text_encoder.get_profiling_start_time_ns() // 1000
+        unet_profiling_start_ts = self.unet.get_profiling_start_time_ns() // 1000
+        safety_checker_profiling_start_ts = self.safety_checker.get_profiling_start_time_ns() // 1000
 
         min_start_ts = min(vae_decoder_profiling_start_ts, 
                                 text_encoder_profiling_start_ts,
@@ -184,7 +184,8 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
 
         def load_and_sort_events(file_name, time_offset):
             with open(file_name) as f:
-                events = sorted(json.load(f), key=lambda d: d['ts'])
+                # sort in desc order, so we can pop from the end
+                events = sorted(json.load(f), key=lambda d: -d['ts'])
             for event in events:
                 event['ts'] += time_offset
             return events
@@ -204,8 +205,8 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
             for idx, event_list in enumerate(event_lists):
                 if len(event_list) == 0:
                     continue
-                if min_value is None or min_value > event_list[0]['ts']:
-                    min_value = event_list[0]['ts']
+                if min_value is None or min_value > event_list[-1]['ts']:
+                    min_value = event_list[-1]['ts']
                     min_index = idx
             return event_lists[min_index].pop()
 
