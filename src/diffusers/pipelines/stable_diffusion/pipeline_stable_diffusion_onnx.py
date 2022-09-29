@@ -186,7 +186,7 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
             with open(file_name) as f:
                 events = sorted(json.load(f), key=lambda d: d['ts'])
             for event in events:
-                event['ts'] -= time_offset
+                event['ts'] += time_offset
             return events
             
         vae_decoder_events = load_and_sort_events(vae_decoder_profile_file, vae_decoder_profiling_start_ts - min_start_ts)
