@@ -212,9 +212,13 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         while any(len(l) > 0 for l in event_lists):
             merged_event_list.append(pop_next_event(event_lists))
 
-        merged_event_list = [json.dumps(x) for x in merged_event_list]
-
         # write out the merged event list
         suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S.%f")
         with open(f'sd_onnx_profile_{suffix}.json', 'w') as f:
-            json.dump(merged_event_list, f)
+            f.write('[\n')
+            for idx, event in enumerate(merged_event_list):
+                f.write(json.dumps(event))
+                if idx < len(merged_event_list) - 1:
+                    f.write(',')
+                f.write('\n')
+            f.write(']\n')
