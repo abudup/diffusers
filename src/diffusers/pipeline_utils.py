@@ -383,16 +383,14 @@ class DiffusionPipeline(ConfigMixin):
                     loading_kwargs["torch_dtype"] = torch_dtype
                 if issubclass(class_obj, diffusers.OnnxRuntimeModel):
                     loading_kwargs["provider"] = provider
+                    session_opts_to_pass = None
                     if session_options is not None:
                         if isinstance(session_options, dict):
                             session_opts_to_pass = session_options.get(name, None)
                         elif isinstance(session_options, SessionOptions):
                             session_opts_to_pass = session_options
-                        else:
-                            session_opts_to_pass = None
-                    else:
-                        session_opts_to_pass = None
-                        loading_kwargs["session_options"] = session_opts_to_pass
+    
+                    loading_kwargs["session_options"] = session_opts_to_pass
 
                 # check if the module is in a subdirectory
                 if os.path.isdir(os.path.join(cached_folder, name)):
