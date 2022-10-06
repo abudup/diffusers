@@ -167,6 +167,12 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
     def end_profiling(self):
+        if (self.vae_decoder.get_profiling_start_time_ns() is None or
+            self.text_encoder.get_profiling_start_time_ns() is None or
+            self.unet.get_profiling_start_time_ns() is None or
+            self.safety_checker.get_profiling_start_time_ns() is None):
+            return None
+        
         vae_decoder_profiling_start_ts = self.vae_decoder.get_profiling_start_time_ns() // 1000
         text_encoder_profiling_start_ts = self.text_encoder.get_profiling_start_time_ns() // 1000
         unet_profiling_start_ts = self.unet.get_profiling_start_time_ns() // 1000
