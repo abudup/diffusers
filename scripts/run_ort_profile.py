@@ -30,7 +30,6 @@ def _parse_arguments():
         '-e',
         '--enable-profiling',
         required=False,
-        type=bool,
         action='store_true',
         help='Enable ORT profiling during the run'
     )
@@ -42,6 +41,14 @@ def _parse_arguments():
         type=int,
         default=0,
         help='Number of warmup iterations to run before the timed run'
+    )
+
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        required=False,
+        action='store_true',
+        help='Enable verbose output from ORT'
     )
         
     args = parser.parse_args()
@@ -55,6 +62,9 @@ def _main():
         if args.enable_profiling:
             opts.enable_profiling = True
             opts.profile_file_prefix = f'onnxruntime_{name}_profile_'
+        if args.verbose:
+            opts.log_severity_level = 0
+            
         session_options[name] = opts
         
     load_start = time.time()
