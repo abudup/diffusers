@@ -167,65 +167,9 @@ class StableDiffusionOnnxPipeline(DiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
     def end_profiling(self):
-        if (self.vae_decoder.get_profiling_start_time_ns() is None or
-            self.text_encoder.get_profiling_start_time_ns() is None or
-            self.unet.get_profiling_start_time_ns() is None or
-            self.safety_checker.get_profiling_start_time_ns() is None):
-            return None
-        
-        vae_decoder_profiling_start_ts = self.vae_decoder.get_profiling_start_time_ns() // 1000
-        text_encoder_profiling_start_ts = self.text_encoder.get_profiling_start_time_ns() // 1000
-        unet_profiling_start_ts = self.unet.get_profiling_start_time_ns() // 1000
-        safety_checker_profiling_start_ts = self.safety_checker.get_profiling_start_time_ns() // 1000
-
-        min_start_ts = min(vae_decoder_profiling_start_ts, 
-                                text_encoder_profiling_start_ts,
-                                unet_profiling_start_ts,
-                                safety_checker_profiling_start_ts)
-
-        vae_decoder_profile_file = self.vae_decoder.end_profiling()
-        text_encoder_profile_file = self.text_encoder.end_profiling()
-        unet_profile_file = self.unet.end_profiling()
-        safety_checker_profile_file = self.safety_checker.end_profiling()
-
-        def load_and_sort_events(file_name, time_offset):
-            with open(file_name) as f:
-                # sort in desc order, so we can pop from the end
-                events = sorted(json.load(f), key=lambda d: -d['ts'])
-            for event in events:
-                event['ts'] += time_offset
-            return events
-            
-        vae_decoder_events = load_and_sort_events(vae_decoder_profile_file, vae_decoder_profiling_start_ts - min_start_ts)
-        text_encoder_events = load_and_sort_events(text_encoder_profile_file, text_encoder_profiling_start_ts - min_start_ts)
-        unet_events = load_and_sort_events(unet_profile_file, unet_profiling_start_ts - min_start_ts)
-        safety_checker_events = load_and_sort_events(safety_checker_profile_file, safety_checker_profiling_start_ts - min_start_ts)
-
-        event_lists = [vae_decoder_events, text_encoder_events, unet_events, safety_checker_events]
-        merged_event_list = []
-
-        def pop_next_event(event_lists: List[List[dict]]):
-            min_value = None
-            min_index = -1
-
-            for idx, event_list in enumerate(event_lists):
-                if len(event_list) == 0:
-                    continue
-                if min_value is None or min_value > event_list[-1]['ts']:
-                    min_value = event_list[-1]['ts']
-                    min_index = idx
-            return event_lists[min_index].pop()
-
-        while any(len(l) > 0 for l in event_lists):
-            merged_event_list.append(pop_next_event(event_lists))
-
-        # write out the merged event list
-        suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S.%f")
-        with open(f'sd_onnx_profile_{suffix}.json', 'w') as f:
-            f.write('[\n')
-            for idx, event in enumerate(merged_event_list):
-                f.write(json.dumps(event))
-                if idx < len(merged_event_list) - 1:
-                    f.write(',')
-                f.write('\n')
-            f.write(']\n')
+        return [
+            self.text_encoder.end_profiling(),
+            self.unet.end_profiling(),
+            self.vae_decoder.end_profiling(),
+            self.safety_checker.end_profiling()
+        ]
